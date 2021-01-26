@@ -30,6 +30,12 @@ impl Session {
     }
 }
 
+impl Drop for Session {
+    fn drop(&mut self) {
+        println!("Dropping Session");
+    }
+}
+
 fn long_operation() -> String {
     std::thread::sleep(std::time::Duration::from_millis(100));
     "long_operation()".to_owned()
@@ -70,17 +76,23 @@ impl Session {
     }
 
     #[node_bindgen]
-    fn doRequestOne(&self) -> bool {
+    fn do_request_one(&self) -> bool {
         println!("Rust: do_request");
         let _ = self.request_channel.0.send(Request::One);
         true
     }
 
-
     #[node_bindgen]
-    fn doRequestTwo(&self) -> bool {
+    fn do_request_two(&self) -> bool {
         println!("Rust: do_request");
         let _ = self.request_channel.0.send(Request::Two);
+        true
+    }
+
+    #[node_bindgen]
+    fn do_shutdown(&self) -> bool {
+        println!("Rust: do_request");
+        let _ = self.request_channel.0.send(Request::Shutdown);
         true
     }
 
@@ -148,6 +160,7 @@ impl Session {
                         }
                         Err(e) => {
                             println!("error: {}", e);
+                            break;
                         }
                     }
                 }
