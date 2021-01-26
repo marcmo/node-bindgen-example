@@ -1,4 +1,8 @@
+#[path = "./events.rs"]
+pub mod events;
+
 use crossbeam_channel as cc;
+use events::*;
 use node_bindgen::derive::node_bindgen;
 use serde::Serialize;
 use std::sync::{Arc, Mutex};
@@ -66,9 +70,17 @@ impl Session {
     }
 
     #[node_bindgen]
-    fn do_request(&self) -> bool {
+    fn doRequestOne(&self) -> bool {
         println!("Rust: do_request");
         let _ = self.request_channel.0.send(Request::One);
+        true
+    }
+
+
+    #[node_bindgen]
+    fn doRequestTwo(&self) -> bool {
+        println!("Rust: do_request");
+        let _ = self.request_channel.0.send(Request::Two);
         true
     }
 
@@ -84,8 +96,8 @@ impl Session {
         self.val
     }
 
-    #[node_bindgen]
-    fn start(&self) {
+    #[node_bindgen(mt)]
+    fn start<F: Fn(Events) + Send + 'static>(&self, cb: F) {
         let protected_state = self.state.clone();
         let request_rx = self.request_channel.1.clone();
         std::thread::spawn(move || {
@@ -106,13 +118,31 @@ impl Session {
                             let res = long_operation();
                             state.cached_result = Some(res);
                             println!("we have the mutable self");
+                            let event = StreamUpdated {
+                                signature: "StreamUpdated".to_string(),
+                                bytes: 1,
+                                rows: 2,
+                            };
+                            cb(Events::StreamUpdated(event))
                             // self.send_event(Event::Tick(1u64));
                         }
                         Ok(Request::Two) => {
+                            let event = StreamUpdated {
+                                signature: "StreamUpdated".to_string(),
+                                bytes: 3,
+                                rows: 4,
+                            };
+                            cb(Events::StreamUpdated(event));
                             println!("Two: {:?}", state.cached_result);
                             // self.send_event(Event::Tick(2u64));
                         }
                         Ok(Request::Shutdown) => {
+                            let event = StreamUpdated {
+                                signature: "StreamUpdated".to_string(),
+                                bytes: 5,
+                                rows: 6,
+                            };
+                            cb(Events::StreamUpdated(event));
                             println!("Shutdown: {:?}", state.cached_result);
                             break;
                         }
