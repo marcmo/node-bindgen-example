@@ -1,10 +1,9 @@
-use node_bindgen::derive::node_bindgen;
 use node_bindgen::core::val::JsEnv;
 use node_bindgen::core::val::JsObject;
 use node_bindgen::core::JSValue;
-use node_bindgen::sys::napi_value;
 use node_bindgen::core::NjError;
 use node_bindgen::core::TryIntoJs;
+use node_bindgen::sys::napi_value;
 
 #[derive(Default, Debug)]
 pub struct StreamUpdated {
@@ -27,7 +26,7 @@ pub enum Events {
     SearchUpdated(SearchUpdated),
 }
 
-impl JSValue for Events {
+impl JSValue<'_> for Events {
     fn convert_to_rust(env: &JsEnv, n_value: napi_value) -> Result<Self, NjError> {
         // check if it is integer
         if let Ok(js_obj) = env.convert_to_rust::<JsObject>(n_value) {
@@ -47,7 +46,7 @@ impl JSValue for Events {
                             return Err(NjError::Other("rows is not found".to_owned()));
                         }
                         Ok(Self::StreamUpdated(data))
-                    },
+                    }
                     "SearchUpdated" => {
                         let mut data = SearchUpdated::default();
                         if let Some(val_property) = js_obj.get_property("bytes")? {
@@ -66,10 +65,8 @@ impl JSValue for Events {
                             return Err(NjError::Other("done is not found".to_owned()));
                         }
                         Ok(Self::SearchUpdated(data))
-                    },
-                    _ => {
-                        Err(NjError::Other("Unknown event has been gotten".to_owned()))
-                    },
+                    }
+                    _ => Err(NjError::Other("Unknown event has been gotten".to_owned())),
                 }
             } else {
                 Err(NjError::Other("Fail to find event signature".to_owned()))
@@ -90,14 +87,14 @@ impl TryIntoJs for Events {
                 json.set_property("bytes", data.bytes.try_to_js(js_env)?)?;
                 json.set_property("rows", data.rows.try_to_js(js_env)?)?;
                 json.try_to_js(js_env)
-            },
+            }
             Events::SearchUpdated(data) => {
                 json.set_property("signature", "SearchUpdated".to_string().try_to_js(js_env)?)?;
                 json.set_property("bytes", data.bytes.try_to_js(js_env)?)?;
                 json.set_property("rows", data.rows.try_to_js(js_env)?)?;
                 json.set_property("done", data.done.try_to_js(js_env)?)?;
                 json.try_to_js(js_env)
-            },
-        }        
+            }
+        }
     }
 }
