@@ -66,6 +66,13 @@ impl Session {
     }
 
     #[node_bindgen]
+    fn do_request(&self) -> bool {
+        println!("Rust: do_request");
+        let _ = self.request_channel.0.send(Request::One);
+        true
+    }
+
+    #[node_bindgen]
     fn plus_one(&self) -> f64 {
         println!("plus 1");
         self.val + 1.0
@@ -82,10 +89,12 @@ impl Session {
         let protected_state = self.state.clone();
         let request_rx = self.request_channel.1.clone();
         std::thread::spawn(move || {
+            println!("rust thread running....");
             if let Ok(mut state) = protected_state.lock() {
                 state.is_running = true;
                 loop {
                     let request = request_rx.recv();
+                    println!("Rust: request arrived in thread");
 
                     match request {
                         Ok(Request::PrintSession) => {
@@ -93,7 +102,7 @@ impl Session {
                             // self.debug();
                         }
                         Ok(Request::One) => {
-                            println!("One: {:?}", state.cached_result);
+                            println!("Rust: handle One: {:?}", state.cached_result);
                             let res = long_operation();
                             state.cached_result = Some(res);
                             println!("we have the mutable self");
