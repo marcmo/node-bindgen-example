@@ -4,6 +4,20 @@ use node_bindgen::core::JSValue;
 use node_bindgen::core::NjError;
 use node_bindgen::core::TryIntoJs;
 use node_bindgen::sys::napi_value;
+use serde::Serialize;
+
+pub enum Request {
+    One,
+    Two,
+    PrintSession,
+    Shutdown,
+}
+
+#[derive(Debug, Serialize)]
+pub enum Event {
+    Tick(u64),
+    Done,
+}
 
 #[derive(Default, Debug)]
 pub struct StreamUpdated {

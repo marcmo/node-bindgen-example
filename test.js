@@ -2,7 +2,7 @@ let addon = require('./dist');
 const assert = require('assert');
 
 async function run() {
-  let obj = new addon.Session(10);
+  let obj = new addon.Session(10, "txt");
   obj.start((event) => {
     // This is call back in thread
     console.log(event);
